@@ -1,0 +1,14 @@
+{
+  "name": "ninja-twitter",
+  "version": "0.0.0",
+  "main": "index.js",
+  "author": "Ninja Blocks <support@ninjablocks.com>",
+  "contributors": [
+    "Nick Clark <nick@ninjablocks.com>"
+  ],
+  "dependencies": {
+    "follow-redirects" : "*",
+    "node-twitter" : "*",
+    ""
+  }
+}
