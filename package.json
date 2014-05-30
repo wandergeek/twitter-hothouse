@@ -8,6 +8,7 @@
   ],
   "dependencies": {
     "follow-redirects" : "*",
-    "node-twitter" : "*"
+    "node-twitter" : "*",
+    "hue.js" : "*"
   }
 }
