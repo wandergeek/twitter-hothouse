@@ -8,7 +8,6 @@
   ],
   "dependencies": {
     "follow-redirects" : "*",
-    "node-twitter" : "*",
-    ""
+    "node-twitter" : "*"
   }
 }
