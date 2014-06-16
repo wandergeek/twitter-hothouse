@@ -24,6 +24,7 @@ var twitterStreamClient = new Twitter.StreamClient(
     '2532227376-arirkCB5NMTE1yQUnhYaNMPtV5JhWrAwKnzC2Kv',
     'WrDwBVp3rpfThpoOvWTIV0beHXUGX2P6GV4dIIonCN24K'
 );
+
 var ninjaIP = "127.0.0.1"; //TODO test w/ ninjablock.local?
 var GUID433 = "3913BBBK0155_0_0_11";
 var APItoken = "cca5a2123f13eb4e57544afea152f4341a14352c";
@@ -60,7 +61,7 @@ hueclient.lights(function(err,lights) {
     hueclient.rgb(i, defaultColor[0],defaultColor[1],defaultColor[2], function(err) {
         if (err) {
         console.log("can't change color on light " + i + ": " + err)
-      	} 
+      	}
     });
 }
   }
