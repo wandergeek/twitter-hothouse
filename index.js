@@ -6,27 +6,38 @@
 
 var Twitter = require('node-twitter');
 var http = require('follow-redirects').http;
-var hue = require('hue.js')
+var _ = require('underscore');
+var hue = require('hue.js');
+var stationIP = "";
+var defaultColor = [5,5,5];
 var colors = {
   green:[0,255,0],
-  red: [255,0,0]
-}
+  red: [255,0,0],
+  blue: [0,0,255]
+};
 
-var DISCO_LIGHT_ON = "http://a.ninja.is/rest/v0/device/WEBHOOK_0_0_108/subdevice/lfOPt/tickle/4c0b751b3c9a023f1f11fbc7ef5c1a826426b2e4"
-var DISCO_LIGHT_OFF = "http://a.ninja.is/rest/v0/device/WEBHOOK_0_0_108/subdevice/RDZf5/tickle/9fc93b04acdbda4cbb489056474855866578385d"
+var DISCO_LIGHT_ON = "100010100010101011011110";
+var DISCO_LIGHT_OFF = "100010100010101011010110";
 var twitterStreamClient = new Twitter.StreamClient(
     'CGjUrM86Nf8HnpEYkCmVJzU80',
     'qLkFbKQVmlMrDzNLUqutJZar1e8SRmD5Pj6DIocxUJWRcnXtyI',
     '2532227376-arirkCB5NMTE1yQUnhYaNMPtV5JhWrAwKnzC2Kv',
     'WrDwBVp3rpfThpoOvWTIV0beHXUGX2P6GV4dIIonCN24K'
 );
+var ninjaIP = "127.0.0.1"; //TODO test w/ ninjablock.local?
+var GUID433 = "3913BBBK0155_0_0_11";
+var APItoken = "cca5a2123f13eb4e57544afea152f4341a14352c";
+var hueclient;
 
+hue.discover(function(stations) {
+  console.dir("Setting base station to " + stations[0]);
+  stationIP = stations[0]
 
-
-var hueclient = hue.createClient({
-  stationIp:"10.0.1.139",
+hueclient = hue.createClient({
+  stationIp:stationIP, //#TODO this should be dynamic
   appName:"hothouse"
 });
+
 
 hueclient.lights(function(err,lights) {
   if (err && err.type === 1) {
@@ -42,14 +53,21 @@ hueclient.lights(function(err,lights) {
       }
     });
   } else {
+    process.stdout.write(stationIP + " has the following lights: ");
     console.log(lights);
-    hueclient.rgb(1, 10,10,10, function(err) {
+    var numLights = Object.keys(lights).length;
+    for(var i = 1; i <= numLights; i++) {
+    hueclient.rgb(i, defaultColor[0],defaultColor[1],defaultColor[2], function(err) {
         if (err) {
-        console.log("can't change color: " + err)
-      }
+        console.log("can't change color on light " + i + ": " + err)
+      	} 
     });
+}
   }
 });
+});
+
+
 
 
 twitterStreamClient.on('close', function() {
@@ -68,10 +86,10 @@ twitterStreamClient.on('tweet', function(tweet) {
 
     if(device.indexOf("light") > -1) {
       var deviceArr = device.split("")
-      var lightNum = deviceArr[5]
-      var color = colors[res[2]]
-      console.log("Device is " + device + ", number is " + lightNum + ", color is " + color)
-      setColor(color)
+      var lightID = deviceArr[5]
+      var color = colors[res[1]]
+      console.log("Device is " + device + ", number is " + lightID + ", color is " + color)
+      setColor(color,lightID)
 
 
     } else if(device.indexOf("disco") > -1) {
@@ -84,10 +102,10 @@ twitterStreamClient.on('tweet', function(tweet) {
 
 twitterStreamClient.start(['#ninjablocks']);
 
-function setColor(color) {
+function setColor(color,lightID) {
   console.log("received color at setcolor " + color[0] + "," + color[1] + "," + color[2])
   console.log(color)
-  hueclient.rgb(1, color[0],color[1],color[2], function(err) {
+  hueclient.rgb(lightID, color[0],color[1],color[2], function(err) {
 
       if (err) {
       console.log("can't change color: " + err)
@@ -97,19 +115,33 @@ function setColor(color) {
 }
 
 function setDisco(state) {
-
-  var HOOK = "";
+  var bitStr = ""
   if(state == "on") {
-    HOOK = DISCO_LIGHT_ON
+      bitStr = DISCO_LIGHT_ON
   } else if(state == "off") {
-    HOOK = DISCO_LIGHT_OFF
+    bitStr = DISCO_LIGHT_OFF
   }
 
-  if(HOOK != "") {
-    http.get(HOOK, function(res) {
-    console.log("Got response: " + res.statusCode);
+  var opt = {
+    host: ninjaIP, //TODO deviceID dynamic?
+    port: '8000',
+    path: "/rest/v0/device/" + GUID433,
+    method: 'PUT',
+    headers: {
+      "Content-Type": "application/json"
+    }
+  };
+
+  if(bitStr != "") {
+    console.log("  sending " + bitStr + " to " + opt.host );
+    var req = http.request(opt, function(res) {
+    console.log("    Got response: " + res.statusCode);
   }).on('error', function(e) {
-    console.log("Got error: " + e.message);
+    console.log("    Got error: " + e.message);
   });
-  }
+  req.write(JSON.stringify({DA: bitStr }));
+  req.end();
+} else {
+    console.log("  Bad state sent to setDisco " + state)
+}
 }
