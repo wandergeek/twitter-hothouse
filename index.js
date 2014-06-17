@@ -13,7 +13,10 @@ var defaultColor = [5,5,5];
 var colors = {
   green:[0,255,0],
   red: [255,0,0],
-  blue: [0,0,255]
+  blue: [0,0,255],
+  yellow: [255,255,0],
+  pink: [255,0,255],
+  purple: [128,0,128]
 };
 
 var DISCO_LIGHT_ON = "100010100010101011011110";
@@ -30,45 +33,52 @@ var GUID433 = "3913BBBK0155_0_0_11";
 var APItoken = "cca5a2123f13eb4e57544afea152f4341a14352c";
 var hueclient;
 
-hue.discover(function(stations) {
-  console.dir("Setting base station to " + stations[0]);
-  stationIP = stations[0]
+var interval = setInterval(function(){
 
-hueclient = hue.createClient({
-  stationIp:stationIP, //#TODO this should be dynamic
-  appName:"hothouse"
-});
+  hue.discover(function(stations) {
+    if (!stations || !stations.length) return console.log('Found no stations');
+
+    clearInterval(interval);
+    
+    console.dir("Setting base station to " + stations[0]);
+    stationIP = stations[0]
+
+    hueclient = hue.createClient({
+      stationIp:stationIP, //#TODO this should be dynamic
+      appName:"hothouse"
+    });
 
 
-hueclient.lights(function(err,lights) {
-  if (err && err.type === 1) {
-    // App has not been registered
 
-    console.log("Please go and press the link button on your base station(s)");
-    hueclient.register(function(err) {
+    hueclient.lights(function(err,lights) {
+      if (err && err.type === 1) {
+        // App has not been registered
 
-      if (err) {
-        console.log("Couldnt register " + err)
+        console.log("Please go and press the link button on your base station(s)");
+        hueclient.register(function(err) {
+
+          if (err) {
+            console.log("Couldnt register " + err)
+          } else {
+            console.log("Registered")
+          }
+        });
       } else {
-        console.log("Registered")
+        process.stdout.write(stationIP + " has the following lights: ");
+        console.log(lights);
+        var numLights = Object.keys(lights).length;
+        for(var i = 1; i <= numLights; i++) {
+          hueclient.rgb(i, defaultColor[0],defaultColor[1],defaultColor[2], function(err) {
+            if (err) {
+              console.log("can't change color on light " + i + ": " + err)
+          	}
+          });
+        }
       }
     });
-  } else {
-    process.stdout.write(stationIP + " has the following lights: ");
-    console.log(lights);
-    var numLights = Object.keys(lights).length;
-    for(var i = 1; i <= numLights; i++) {
-    hueclient.rgb(i, defaultColor[0],defaultColor[1],defaultColor[2], function(err) {
-        if (err) {
-        console.log("can't change color on light " + i + ": " + err)
-      	}
-    });
-}
-  }
-});
-});
+  });
 
-
+}, 3000);
 
 
 twitterStreamClient.on('close', function() {
